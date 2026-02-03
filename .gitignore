@@ -5,3 +5,8 @@ dist
 build
 coverage
 .vercel
+
+# SQLite database files
+*.db
+*.db-journal
+prisma/dev.db*
