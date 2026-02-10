@@ -1,36 +1,68 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react';
+import ProductList from './components/ProductList';
+import ProductForm from './components/ProductForm';
 
 function App() {
-    const [data, setData] = useState(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-    useEffect(() => {
-        const apiUrl = import.meta.env.VITE_API_URL || '';
-        fetch(`${apiUrl}/api/health`)
-            .then(res => res.json())
-            .then(data => setData(data))
-            .catch(err => console.error('Error fetching health check:', err));
-    }, []);
+  const handleAddClick = () => {
+    setEditingProduct(null);
+    setIsFormOpen(true);
+  };
 
-    return (
-        <div className="container">
-            <h1>ShopSmart</h1>
-            <div className="card">
-                <h2>Backend Status</h2>
-                {data ? (
-                    <div>
-                        <p>Status: <span className="status-ok">{data.status}</span></p>
-                        <p>Message: {data.message}</p>
-                        <p>Timestamp: {data.timestamp}</p>
-                    </div>
-                ) : (
-                    <p>Loading backend status...</p>
-                )}
-            </div>
-            <p className="hint">
-                Edit <code>src/App.jsx</code> and save to test HMR
-            </p>
+  const handleEditClick = (product) => {
+    setEditingProduct(product);
+    setIsFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingProduct(null);
+  };
+
+  const handleFormSuccess = () => {
+    // Trigger ProductList refresh by changing key
+    setRefreshKey(prev => prev + 1);
+  };
+
+  return (
+    <div className="app">
+      <header className="app-header">
+        <h1>🛒 SmartShop</h1>
+        <p className="subtitle">Product Management System</p>
+      </header>
+
+      <main className="app-main">
+        <div className="toolbar">
+          <button
+            className="btn btn-primary"
+            onClick={handleAddClick}
+          >
+            + Add Product
+          </button>
         </div>
-    )
+
+        <ProductList
+          key={refreshKey}
+          onEdit={handleEditClick}
+        />
+
+        {isFormOpen && (
+          <ProductForm
+            product={editingProduct}
+            onClose={handleCloseForm}
+            onSuccess={handleFormSuccess}
+          />
+        )}
+      </main>
+
+      <footer className="app-footer">
+        <p>SmartShop &copy; 2026 | E-Commerce Management</p>
+      </footer>
+    </div>
+  );
 }
 
-export default App
+export default App;
