@@ -4,7 +4,29 @@ const cors = require('cors');
 const app = express();
 
 // Middleware
-app.use(cors());
+// CORS Configuration - Allow both local and deployed frontend
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      'http://localhost:5173',  // Local development
+      'http://localhost:3000',  // Alternative local port
+      process.env.FRONTEND_URL  // Vercel deployment URL
+    ].filter(Boolean); // Remove undefined values
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Health Check Route
