@@ -16,6 +16,9 @@ model Product {
   description String
   price       Float
   stock       Int
+  imageUrl    String?
+  category    String   @default("General")
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

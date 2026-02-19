@@ -3,7 +3,7 @@ const prisma = require('../config/prisma');
 // Create a new product
 const createProduct = async (req, res) => {
     try {
-        const { name, description, price, stock } = req.body;
+        const { name, description, price, stock, imageUrl, category, isActive } = req.body;
 
         // Validate required fields
         if (!name || !description || price === undefined || stock === undefined) {
@@ -26,7 +26,10 @@ const createProduct = async (req, res) => {
                 name,
                 description,
                 price,
-                stock
+                stock,
+                imageUrl: imageUrl || null,
+                category: category || 'General',
+                isActive: isActive !== undefined ? Boolean(isActive) : true
             }
         });
 
@@ -38,12 +41,18 @@ const createProduct = async (req, res) => {
 };
 
 // Get all products
+// Supports query params: ?category=Electronics&isActive=true
 const getAllProducts = async (req, res) => {
     try {
+        const { category, isActive } = req.query;
+
+        const where = {};
+        if (category) where.category = category;
+        if (isActive !== undefined) where.isActive = isActive === 'true';
+
         const products = await prisma.product.findMany({
-            orderBy: {
-                createdAt: 'desc'
-            }
+            where,
+            orderBy: { createdAt: 'desc' }
         });
 
         res.status(200).json(products);
@@ -88,7 +97,7 @@ const updateProduct = async (req, res) => {
             return res.status(400).json({ error: 'Invalid product ID' });
         }
 
-        const { name, description, price, stock } = req.body;
+        const { name, description, price, stock, imageUrl, category, isActive } = req.body;
 
         // Check if product exists
         const existingProduct = await prisma.product.findUnique({
@@ -115,6 +124,9 @@ const updateProduct = async (req, res) => {
             }
             updateData.stock = stock;
         }
+        if (imageUrl !== undefined) updateData.imageUrl = imageUrl || null;
+        if (category !== undefined) updateData.category = category;
+        if (isActive !== undefined) updateData.isActive = Boolean(isActive);
 
         const product = await prisma.product.update({
             where: { id: productId },
