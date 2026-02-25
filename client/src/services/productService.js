@@ -1,12 +1,15 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-// Get all products
-export const getAllProducts = async () => {
+// Get all products (supports ?category=x&isActive=true)
+export const getAllProducts = async (params = {}) => {
     try {
-        const response = await fetch(`${API_URL}/api/products`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch products');
-        }
+        const query = new URLSearchParams();
+        if (params.category) query.set('category', params.category);
+        if (params.isActive !== undefined) query.set('isActive', params.isActive);
+        const qs = query.toString() ? `?${query.toString()}` : '';
+
+        const response = await fetch(`${API_URL}/api/products${qs}`);
+        if (!response.ok) throw new Error('Failed to fetch products');
         return await response.json();
     } catch (error) {
         console.error('Error fetching products:', error);
@@ -18,9 +21,7 @@ export const getAllProducts = async () => {
 export const getProductById = async (id) => {
     try {
         const response = await fetch(`${API_URL}/api/products/${id}`);
-        if (!response.ok) {
-            throw new Error('Failed to fetch product');
-        }
+        if (!response.ok) throw new Error('Failed to fetch product');
         return await response.json();
     } catch (error) {
         console.error('Error fetching product:', error);
@@ -33,9 +34,7 @@ export const createProduct = async (productData) => {
     try {
         const response = await fetch(`${API_URL}/api/products`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(productData),
         });
         if (!response.ok) {
@@ -54,9 +53,7 @@ export const updateProduct = async (id, productData) => {
     try {
         const response = await fetch(`${API_URL}/api/products/${id}`, {
             method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(productData),
         });
         if (!response.ok) {

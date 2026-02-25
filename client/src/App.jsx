@@ -1,67 +1,21 @@
-import { useState } from 'react';
-import ProductList from './components/ProductList';
-import ProductForm from './components/ProductForm';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import StorefrontHome from './storefront/StorefrontHome';
+import AdminDashboard from './admin/AdminDashboard';
 
 function App() {
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const handleAddClick = () => {
-    setEditingProduct(null);
-    setIsFormOpen(true);
-  };
-
-  const handleEditClick = (product) => {
-    setEditingProduct(product);
-    setIsFormOpen(true);
-  };
-
-  const handleCloseForm = () => {
-    setIsFormOpen(false);
-    setEditingProduct(null);
-  };
-
-  const handleFormSuccess = () => {
-    // Trigger ProductList refresh by changing key
-    setRefreshKey(prev => prev + 1);
-  };
-
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>🛒 SmartShop</h1>
-        <p className="subtitle">Product Management System</p>
-      </header>
+    <BrowserRouter>
+      <Routes>
+        {/* Storefront - customer-facing */}
+        <Route path="/" element={<StorefrontHome />} />
 
-      <main className="app-main">
-        <div className="toolbar">
-          <button
-            className="btn btn-primary"
-            onClick={handleAddClick}
-          >
-            + Add Product
-          </button>
-        </div>
+        {/* Admin Panel - product management */}
+        <Route path="/admin" element={<AdminDashboard />} />
 
-        <ProductList
-          key={refreshKey}
-          onEdit={handleEditClick}
-        />
-
-        {isFormOpen && (
-          <ProductForm
-            product={editingProduct}
-            onClose={handleCloseForm}
-            onSuccess={handleFormSuccess}
-          />
-        )}
-      </main>
-
-      <footer className="app-footer">
-        <p>SmartShop &copy; 2026 | E-Commerce Management</p>
-      </footer>
-    </div>
+        {/* Catch-all: redirect unknown routes to storefront */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
