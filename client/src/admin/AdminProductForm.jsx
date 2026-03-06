@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { createProduct, updateProduct } from '../services/productService';
 
 const CATEGORIES = ['General', 'Electronics', 'Clothing', 'Home & Kitchen', 'Sports', 'Books', 'Toys', 'Other'];
@@ -157,5 +158,20 @@ function AdminProductForm({ product, onClose, onSuccess }) {
     </div>
   );
 }
+
+AdminProductForm.propTypes = {
+  product: PropTypes.shape({
+    id: PropTypes.number,
+    name: PropTypes.string,
+    description: PropTypes.string,
+    price: PropTypes.number,
+    stock: PropTypes.number,
+    imageUrl: PropTypes.string,
+    category: PropTypes.string,
+    isActive: PropTypes.bool,
+  }),
+  onClose: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func.isRequired,
+};
 
 export default AdminProductForm;

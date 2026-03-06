@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { getAllProducts, deleteProduct } from '../services/productService';
 
 function AdminProductList({ onEdit }) {
@@ -111,5 +112,9 @@ function AdminProductList({ onEdit }) {
     </div>
   );
 }
+
+AdminProductList.propTypes = {
+  onEdit: PropTypes.func.isRequired,
+};
 
 export default AdminProductList;

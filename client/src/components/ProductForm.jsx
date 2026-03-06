@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { createProduct, updateProduct } from '../services/productService';
 
 function ProductForm({ product, onClose, onSuccess }) {
@@ -175,5 +176,17 @@ function ProductForm({ product, onClose, onSuccess }) {
     </div>
   );
 }
+
+ProductForm.propTypes = {
+  product: PropTypes.shape({
+    id: PropTypes.number,
+    name: PropTypes.string,
+    description: PropTypes.string,
+    price: PropTypes.number,
+    stock: PropTypes.number,
+  }),
+  onClose: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func.isRequired,
+};
 
 export default ProductForm;
