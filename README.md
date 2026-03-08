@@ -1,6 +1,6 @@
 # SmartShop - E-Commerce Web Application
 
-A full-stack e-commerce web application built with React, Node.js, Express, and Prisma ORM with SQLite database.
+A full-stack e-commerce web application built with React, Node.js, Express, and Prisma ORM with SQLite database and used Jest for testing with automated workflows.
 
 ## 📋 Project Overview
 
