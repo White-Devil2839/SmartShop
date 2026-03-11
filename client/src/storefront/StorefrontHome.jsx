@@ -1,18 +1,93 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import { getAllProducts } from '../services/productService';
 import './storefront.css';
 
+// ── Shared Nav (reused in ProductDetail too) ────────────────────────────────
+export function StoreNav() {
+  return (
+    <header className="store-header">
+      <div className="store-header-inner">
+        <Link to="/" className="store-brand">
+          🛒 <span>SmartShop</span>
+        </Link>
+        <nav className="store-nav">
+          <Link to="/" className="nav-link">Shop</Link>
+          <Link to="/admin" className="nav-link admin-link">⚙️ Admin</Link>
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+// ── Product Card ────────────────────────────────────────────────────────────
+function ProductCard({ product }) {
+  const stockLabel =
+    product.stock === 0 ? 'Out of stock'
+    : product.stock < 5 ? `Only ${product.stock} left`
+    : 'In stock';
+
+  const stockClass =
+    product.stock === 0 ? 'out-of-stock'
+    : product.stock < 5 ? 'low-stock'
+    : '';
+
+  return (
+    <Link to={`/product/${product.id}`} className="store-card" key={product.id}>
+      <div className="store-card-image">
+        {product.imageUrl
+          ? <img src={product.imageUrl} alt={product.name}
+              onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
+          : null}
+        <div className="store-card-placeholder"
+          style={{ display: product.imageUrl ? 'none' : 'flex' }}>
+          🛍️
+        </div>
+      </div>
+
+      <div className="store-card-body">
+        <span className="store-category">{product.category}</span>
+        <h3 className="store-card-title">{product.name}</h3>
+        <p className="store-card-desc">{product.description}</p>
+
+        <div className="store-card-footer">
+          <div>
+            <span className="store-price">${product.price.toFixed(2)}</span>
+            <span className={`store-stock ${stockClass}`}>{stockLabel}</span>
+          </div>
+          <span className="card-cta">View →</span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+ProductCard.propTypes = {
+  product: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    name: PropTypes.string.isRequired,
+    description: PropTypes.string,
+    price: PropTypes.number.isRequired,
+    stock: PropTypes.number.isRequired,
+    imageUrl: PropTypes.string,
+    category: PropTypes.string,
+  }).isRequired,
+};
+
+// ── Main Page ───────────────────────────────────────────────────────────────
 function StorefrontHome() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [products, setProducts]     = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState(null);
+  const [search, setSearch]         = useState('');
+  const [category, setCategory]     = useState('All');
+  const [sort, setSort]             = useState('newest');
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        // Storefront ONLY shows active products
         const data = await getAllProducts({ isActive: true });
         setProducts(data);
       } catch (err) {
@@ -24,20 +99,49 @@ function StorefrontHome() {
     fetchProducts();
   }, []);
 
+  // Derive unique categories from fetched products
+  const categories = useMemo(() => {
+    const cats = [...new Set(products.map(p => p.category))].filter(Boolean).sort();
+    return ['All', ...cats];
+  }, [products]);
+
+  // Apply search + filter + sort (client-side)
+  const displayed = useMemo(() => {
+    let result = [...products];
+
+    // Search
+    const q = search.trim().toLowerCase();
+    if (q) {
+      result = result.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q)
+      );
+    }
+
+    // Category filter
+    if (category !== 'All') {
+      result = result.filter(p => p.category === category);
+    }
+
+    // Sort
+    switch (sort) {
+      case 'price-asc':  result.sort((a, b) => a.price - b.price); break;
+      case 'price-desc': result.sort((a, b) => b.price - a.price); break;
+      case 'name-asc':   result.sort((a, b) => a.name.localeCompare(b.name)); break;
+      case 'newest':
+      default:           result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    return result;
+  }, [products, search, category, sort]);
+
+  const handleReset = () => { setSearch(''); setCategory('All'); setSort('newest'); };
+  const isFiltered = search || category !== 'All' || sort !== 'newest';
+
   return (
     <div className="storefront-layout">
-      {/* Navigation */}
-      <header className="store-header">
-        <div className="store-header-inner">
-          <Link to="/" className="store-brand">
-            🛒 <span>SmartShop</span>
-          </Link>
-          <nav className="store-nav">
-            <Link to="/" className="nav-link active">Shop</Link>
-            <Link to="/admin" className="nav-link admin-link">⚙️ Admin</Link>
-          </nav>
-        </div>
-      </header>
+      <StoreNav />
 
       {/* Hero */}
       <section className="store-hero">
@@ -45,66 +149,85 @@ function StorefrontHome() {
         <p>Explore our curated collection of quality items</p>
       </section>
 
-      {/* Products Grid */}
       <main className="store-main">
+        {/* ── Controls Bar ── */}
+        <div className="store-controls">
+          {/* Search */}
+          <div className="search-wrapper">
+            <span className="search-icon">🔍</span>
+            <input
+              type="text"
+              className="store-search"
+              placeholder="Search products..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <button className="search-clear" onClick={() => setSearch('')} aria-label="Clear search">×</button>
+            )}
+          </div>
+
+          {/* Category filter */}
+          <select
+            className="store-filter"
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+          >
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+
+          {/* Sort */}
+          <select
+            className="store-filter"
+            value={sort}
+            onChange={e => setSort(e.target.value)}
+          >
+            <option value="newest">Newest first</option>
+            <option value="price-asc">Price: Low → High</option>
+            <option value="price-desc">Price: High → Low</option>
+            <option value="name-asc">Name: A → Z</option>
+          </select>
+
+          {/* Reset */}
+          {isFiltered && (
+            <button className="store-reset" onClick={handleReset}>✕ Reset</button>
+          )}
+        </div>
+
+        {/* Result count */}
+        {!loading && !error && (
+          <p className="result-count">
+            {displayed.length === 0
+              ? 'No products match your filters'
+              : `Showing ${displayed.length} product${displayed.length !== 1 ? 's' : ''}${isFiltered ? ' (filtered)' : ''}`}
+          </p>
+        )}
+
+        {/* Loading / Error */}
         {loading && (
           <div className="store-loading">
             <div className="spinner" />
             <p>Loading products...</p>
           </div>
         )}
-
         {error && (
           <div className="store-error">
             <p>⚠️ Could not load products. Please try again later.</p>
           </div>
         )}
 
-        {!loading && !error && products.length === 0 && (
-          <div className="store-empty">
-            <p>🎁 No products available right now. Check back soon!</p>
+        {/* Grid */}
+        {!loading && !error && displayed.length > 0 && (
+          <div className="store-grid">
+            {displayed.map(product => <ProductCard key={product.id} product={product} />)}
           </div>
         )}
 
-        {!loading && !error && products.length > 0 && (
-          <div className="store-grid">
-            {products.map((product) => (
-              <div className="store-card" key={product.id}>
-                <div className="store-card-image">
-                  {product.imageUrl ? (
-                    <img
-                      src={product.imageUrl}
-                      alt={product.name}
-                      onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
-                    />
-                  ) : null}
-                  <div className="store-card-placeholder" style={{ display: product.imageUrl ? 'none' : 'flex' }}>
-                    🛍️
-                  </div>
-                </div>
-
-                <div className="store-card-body">
-                  <span className="store-category">{product.category}</span>
-                  <h3 className="store-card-title">{product.name}</h3>
-                  <p className="store-card-desc">{product.description}</p>
-
-                  <div className="store-card-footer">
-                    <div>
-                      <span className="store-price">${product.price.toFixed(2)}</span>
-                      <span className={`store-stock ${product.stock === 0 ? 'out-of-stock' : product.stock < 5 ? 'low-stock' : ''}`}>
-                        {product.stock === 0 ? 'Out of stock' : product.stock < 5 ? `Only ${product.stock} left` : 'In stock'}
-                      </span>
-                    </div>
-                    <button
-                      className="btn-add-cart"
-                      disabled={product.stock === 0}
-                    >
-                      {product.stock === 0 ? 'Unavailable' : 'Add to Cart'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
+        {/* Empty after filter */}
+        {!loading && !error && displayed.length === 0 && (
+          <div className="store-empty">
+            <p>🎁 {isFiltered ? 'No products match your search. ' : 'No products available yet. '}</p>
+            {isFiltered && <button className="store-reset" onClick={handleReset}>Clear filters</button>}
           </div>
         )}
       </main>
