@@ -1,32 +1,21 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { useCart } from '../context/CartContext';
+import { placeOrder } from '../services/orderService';
 import { StoreNav } from './StorefrontHome';
 import './storefront.css';
 import './cart.css';
 
 function QtyControl({ item }) {
   const { setQty, removeFromCart } = useCart();
-
   return (
     <div className="qty-control">
-      <button
-        className="qty-btn"
-        onClick={() => setQty(item.id, item.qty - 1)}
-        aria-label="Decrease quantity"
-      >−</button>
+      <button className="qty-btn" onClick={() => setQty(item.id, item.qty - 1)} aria-label="Decrease">−</button>
       <span className="qty-value">{item.qty}</span>
-      <button
-        className="qty-btn"
-        onClick={() => setQty(item.id, item.qty + 1)}
-        disabled={item.qty >= item.stock}
-        aria-label="Increase quantity"
-      >+</button>
-      <button
-        className="qty-remove"
-        onClick={() => removeFromCart(item.id)}
-        aria-label="Remove item"
-      >🗑</button>
+      <button className="qty-btn" onClick={() => setQty(item.id, item.qty + 1)}
+        disabled={item.qty >= item.stock} aria-label="Increase">+</button>
+      <button className="qty-remove" onClick={() => removeFromCart(item.id)} aria-label="Remove">🗑</button>
     </div>
   );
 }
@@ -41,15 +30,36 @@ QtyControl.propTypes = {
 
 function CartPage() {
   const { items, subtotal, totalItems, clearCart } = useCart();
+  const navigate = useNavigate();
+
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [checkoutError, setCheckoutError]     = useState(null);
 
   const isEmpty = items.length === 0;
+
+  const handleCheckout = async () => {
+    setCheckoutError(null);
+    setCheckoutLoading(true);
+    try {
+      const orderItems = items.map(i => ({ productId: i.id, quantity: i.qty }));
+      const order = await placeOrder(orderItems);
+      clearCart();
+      navigate(`/order/${order.id}`);
+    } catch (err) {
+      const msg = err.details?.length
+        ? err.details.join('\n')
+        : err.message;
+      setCheckoutError(msg);
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   return (
     <div className="storefront-layout">
       <StoreNav />
 
       <main className="store-main cart-main">
-        {/* Breadcrumb */}
         <nav className="breadcrumb">
           <Link to="/">Shop</Link>
           <span className="breadcrumb-sep">›</span>
@@ -62,11 +72,16 @@ function CartPage() {
             {totalItems > 0 && <span className="cart-count-badge">{totalItems}</span>}
           </h1>
           {!isEmpty && (
-            <button className="btn-clear-cart" onClick={clearCart}>
-              Clear cart
-            </button>
+            <button className="btn-clear-cart" onClick={clearCart}>Clear cart</button>
           )}
         </div>
+
+        {checkoutError && (
+          <div className="checkout-error">
+            <strong>⚠️ Could not place order:</strong>
+            <pre>{checkoutError}</pre>
+          </div>
+        )}
 
         {isEmpty ? (
           <div className="cart-empty">
@@ -91,13 +106,9 @@ function CartPage() {
                   </div>
 
                   <div className="cart-item-info">
-                    <Link to={`/product/${item.id}`} className="cart-item-name">
-                      {item.name}
-                    </Link>
+                    <Link to={`/product/${item.id}`} className="cart-item-name">{item.name}</Link>
                     <span className="cart-item-category">{item.category}</span>
-                    <span className="cart-item-unit-price">
-                      ${item.price.toFixed(2)} each
-                    </span>
+                    <span className="cart-item-unit-price">${item.price.toFixed(2)} each</span>
                     {item.qty >= item.stock && (
                       <span className="cart-stock-warning">⚠️ Max stock reached</span>
                     )}
@@ -105,9 +116,7 @@ function CartPage() {
 
                   <div className="cart-item-right">
                     <QtyControl item={item} />
-                    <span className="cart-item-total">
-                      ${(item.price * item.qty).toFixed(2)}
-                    </span>
+                    <span className="cart-item-total">${(item.price * item.qty).toFixed(2)}</span>
                   </div>
                 </div>
               ))}
@@ -116,7 +125,6 @@ function CartPage() {
             {/* Order summary */}
             <aside className="cart-summary">
               <h2 className="summary-title">Order Summary</h2>
-
               <div className="summary-rows">
                 {items.map(item => (
                   <div className="summary-row" key={item.id}>
@@ -125,19 +133,19 @@ function CartPage() {
                   </div>
                 ))}
               </div>
-
               <div className="summary-divider" />
-
               <div className="summary-row summary-total">
                 <span>Subtotal</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
-
               <p className="summary-note">Taxes and shipping calculated at checkout.</p>
 
-              <button className="btn-checkout" disabled>
-                Proceed to Checkout
-                <span className="checkout-note">(coming soon)</span>
+              <button
+                className="btn-checkout"
+                onClick={handleCheckout}
+                disabled={checkoutLoading}
+              >
+                {checkoutLoading ? 'Placing order...' : 'Proceed to Checkout'}
               </button>
 
               <Link to="/" className="btn-continue">← Continue Shopping</Link>
