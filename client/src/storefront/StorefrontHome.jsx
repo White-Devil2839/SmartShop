@@ -2,10 +2,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { getAllProducts } from '../services/productService';
+import { useCart } from '../context/CartContext';
 import './storefront.css';
+import './cart.css';
 
-// ── Shared Nav (reused in ProductDetail too) ────────────────────────────────
+// ── Shared Nav ──────────────────────────────────────────────────────────────
 export function StoreNav() {
+  const { totalItems } = useCart();
   return (
     <header className="store-header">
       <div className="store-header-inner">
@@ -14,6 +17,12 @@ export function StoreNav() {
         </Link>
         <nav className="store-nav">
           <Link to="/" className="nav-link">Shop</Link>
+          <Link to="/cart" className="nav-cart" aria-label="Cart">
+            🛍️
+            {totalItems > 0 && (
+              <span className="nav-cart-badge">{totalItems}</span>
+            )}
+          </Link>
           <Link to="/admin" className="nav-link admin-link">⚙️ Admin</Link>
         </nav>
       </div>
@@ -23,6 +32,10 @@ export function StoreNav() {
 
 // ── Product Card ────────────────────────────────────────────────────────────
 function ProductCard({ product }) {
+  const { addToCart, getQtyInCart } = useCart();
+  const qtyInCart = getQtyInCart(product.id);
+  const maxReached = qtyInCart >= product.stock;
+
   const stockLabel =
     product.stock === 0 ? 'Out of stock'
     : product.stock < 5 ? `Only ${product.stock} left`
@@ -30,20 +43,22 @@ function ProductCard({ product }) {
 
   const stockClass =
     product.stock === 0 ? 'out-of-stock'
-    : product.stock < 5 ? 'low-stock'
-    : '';
+    : product.stock < 5 ? 'low-stock' : '';
+
+  const handleAdd = (e) => {
+    e.preventDefault(); // don't navigate to detail page
+    addToCart(product);
+  };
 
   return (
-    <Link to={`/product/${product.id}`} className="store-card" key={product.id}>
+    <Link to={`/product/${product.id}`} className="store-card">
       <div className="store-card-image">
         {product.imageUrl
           ? <img src={product.imageUrl} alt={product.name}
               onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }} />
           : null}
         <div className="store-card-placeholder"
-          style={{ display: product.imageUrl ? 'none' : 'flex' }}>
-          🛍️
-        </div>
+          style={{ display: product.imageUrl ? 'none' : 'flex' }}>🛍️</div>
       </div>
 
       <div className="store-card-body">
@@ -56,7 +71,16 @@ function ProductCard({ product }) {
             <span className="store-price">${product.price.toFixed(2)}</span>
             <span className={`store-stock ${stockClass}`}>{stockLabel}</span>
           </div>
-          <span className="card-cta">View →</span>
+          <button
+            className={`btn-add-cart ${qtyInCart > 0 ? 'in-cart' : ''}`}
+            onClick={handleAdd}
+            disabled={product.stock === 0 || maxReached}
+          >
+            {product.stock === 0 ? 'Unavailable'
+              : maxReached ? `In cart (${qtyInCart})`
+              : qtyInCart > 0 ? `Add more (${qtyInCart})`
+              : 'Add to Cart'}
+          </button>
         </div>
       </div>
     </Link>
@@ -75,7 +99,7 @@ ProductCard.propTypes = {
   }).isRequired,
 };
 
-// ── Main Page ───────────────────────────────────────────────────────────────
+// ── Main Storefront Home ────────────────────────────────────────────────────
 function StorefrontHome() {
   const [products, setProducts]     = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -99,40 +123,26 @@ function StorefrontHome() {
     fetchProducts();
   }, []);
 
-  // Derive unique categories from fetched products
   const categories = useMemo(() => {
     const cats = [...new Set(products.map(p => p.category))].filter(Boolean).sort();
     return ['All', ...cats];
   }, [products]);
 
-  // Apply search + filter + sort (client-side)
   const displayed = useMemo(() => {
     let result = [...products];
-
-    // Search
     const q = search.trim().toLowerCase();
-    if (q) {
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        p.description?.toLowerCase().includes(q) ||
-        p.category?.toLowerCase().includes(q)
-      );
-    }
-
-    // Category filter
-    if (category !== 'All') {
-      result = result.filter(p => p.category === category);
-    }
-
-    // Sort
+    if (q) result = result.filter(p =>
+      p.name.toLowerCase().includes(q) ||
+      p.description?.toLowerCase().includes(q) ||
+      p.category?.toLowerCase().includes(q)
+    );
+    if (category !== 'All') result = result.filter(p => p.category === category);
     switch (sort) {
       case 'price-asc':  result.sort((a, b) => a.price - b.price); break;
       case 'price-desc': result.sort((a, b) => b.price - a.price); break;
       case 'name-asc':   result.sort((a, b) => a.name.localeCompare(b.name)); break;
-      case 'newest':
       default:           result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
-
     return result;
   }, [products, search, category, sort]);
 
@@ -143,16 +153,14 @@ function StorefrontHome() {
     <div className="storefront-layout">
       <StoreNav />
 
-      {/* Hero */}
       <section className="store-hero">
         <h2>Discover Our Products</h2>
         <p>Explore our curated collection of quality items</p>
       </section>
 
       <main className="store-main">
-        {/* ── Controls Bar ── */}
+        {/* Controls */}
         <div className="store-controls">
-          {/* Search */}
           <div className="search-wrapper">
             <span className="search-icon">🔍</span>
             <input
@@ -166,35 +174,18 @@ function StorefrontHome() {
               <button className="search-clear" onClick={() => setSearch('')} aria-label="Clear search">×</button>
             )}
           </div>
-
-          {/* Category filter */}
-          <select
-            className="store-filter"
-            value={category}
-            onChange={e => setCategory(e.target.value)}
-          >
+          <select className="store-filter" value={category} onChange={e => setCategory(e.target.value)}>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-
-          {/* Sort */}
-          <select
-            className="store-filter"
-            value={sort}
-            onChange={e => setSort(e.target.value)}
-          >
+          <select className="store-filter" value={sort} onChange={e => setSort(e.target.value)}>
             <option value="newest">Newest first</option>
             <option value="price-asc">Price: Low → High</option>
             <option value="price-desc">Price: High → Low</option>
             <option value="name-asc">Name: A → Z</option>
           </select>
-
-          {/* Reset */}
-          {isFiltered && (
-            <button className="store-reset" onClick={handleReset}>✕ Reset</button>
-          )}
+          {isFiltered && <button className="store-reset" onClick={handleReset}>✕ Reset</button>}
         </div>
 
-        {/* Result count */}
         {!loading && !error && (
           <p className="result-count">
             {displayed.length === 0
@@ -203,30 +194,18 @@ function StorefrontHome() {
           </p>
         )}
 
-        {/* Loading / Error */}
-        {loading && (
-          <div className="store-loading">
-            <div className="spinner" />
-            <p>Loading products...</p>
-          </div>
-        )}
-        {error && (
-          <div className="store-error">
-            <p>⚠️ Could not load products. Please try again later.</p>
-          </div>
-        )}
+        {loading && <div className="store-loading"><div className="spinner" /><p>Loading products...</p></div>}
+        {error && <div className="store-error"><p>⚠️ Could not load products. Please try again later.</p></div>}
 
-        {/* Grid */}
         {!loading && !error && displayed.length > 0 && (
           <div className="store-grid">
             {displayed.map(product => <ProductCard key={product.id} product={product} />)}
           </div>
         )}
 
-        {/* Empty after filter */}
         {!loading && !error && displayed.length === 0 && (
           <div className="store-empty">
-            <p>🎁 {isFiltered ? 'No products match your search. ' : 'No products available yet. '}</p>
+            <p>🎁 {isFiltered ? 'No products match your search.' : 'No products available yet.'}</p>
             {isFiltered && <button className="store-reset" onClick={handleReset}>Clear filters</button>}
           </div>
         )}

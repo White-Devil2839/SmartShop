@@ -289,6 +289,26 @@ body {
     cursor: not-allowed;
 }
 
+.btn-add-cart.in-cart { background: #6366f1; }
+.btn-add-cart.in-cart:hover:not(:disabled) { background: #4f46e5; }
+
+.btn-add-cart.cart-success { background: #16a34a; }
+
+.btn-view-cart {
+    display: inline-flex;
+    align-items: center;
+    background: #f0fdf4;
+    color: #16a34a;
+    text-decoration: none;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 1px solid #bbf7d0;
+    transition: background 0.15s;
+}
+.btn-view-cart:hover { background: #dcfce7; }
+
 /* ---- Footer ---- */
 .store-footer {
     background: #1e293b;
