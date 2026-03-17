@@ -15,7 +15,7 @@ A full-stack e-commerce web application built with **React + Vite** (frontend) a
 
 ---
 
-## ✅ Features
+## ✅ Features:-
 
 ### Storefront (Customer UI — `/`)
 - 📦 Product grid showing active products only
