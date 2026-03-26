@@ -1,33 +1,24 @@
 import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import AdminProductList from './AdminProductList';
 import AdminProductForm from './AdminProductForm';
-import { Link } from 'react-router-dom';
 import './admin.css';
 
 function AdminDashboard() {
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const [isFormOpen, setIsFormOpen]       = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshKey, setRefreshKey]         = useState(0);
 
-  const handleAddClick = () => {
-    setEditingProduct(null);
-    setIsFormOpen(true);
-  };
+  const handleAddClick  = () => { setEditingProduct(null); setIsFormOpen(true); };
+  const handleEditClick = (product) => { setEditingProduct(product); setIsFormOpen(true); };
+  const handleCloseForm = () => { setIsFormOpen(false); setEditingProduct(null); };
+  const handleFormSuccess = () => { setRefreshKey(prev => prev + 1); handleCloseForm(); };
 
-  const handleEditClick = (product) => {
-    setEditingProduct(product);
-    setIsFormOpen(true);
-  };
-
-  const handleCloseForm = () => {
-    setIsFormOpen(false);
-    setEditingProduct(null);
-  };
-
-  const handleFormSuccess = () => {
-    setRefreshKey(prev => prev + 1);
-    handleCloseForm();
-  };
+  const handleLogout = () => { logout(); navigate('/login', { replace: true }); };
 
   return (
     <div className="admin-layout">
@@ -40,9 +31,19 @@ function AdminDashboard() {
               <p>Product Management Panel</p>
             </div>
           </div>
-          <Link to="/" className="btn btn-outline">
-            🛍️ View Storefront
-          </Link>
+
+          <div className="admin-header-actions">
+            {/* Logged-in user badge */}
+            <span className="admin-user-badge">
+              👤 {user?.username}
+            </span>
+
+            <Link to="/" className="btn btn-outline">🛍️ Storefront</Link>
+
+            <button className="btn btn-logout" onClick={handleLogout}>
+              Sign Out
+            </button>
+          </div>
         </div>
       </header>
 

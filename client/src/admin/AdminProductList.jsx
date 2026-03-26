@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { getAllProducts, deleteProduct } from '../services/productService';
+import { useAuth } from '../context/AuthContext';
 
 function AdminProductList({ onEdit }) {
+  const { token } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -30,7 +32,7 @@ function AdminProductList({ onEdit }) {
     if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
     try {
       setDeletingId(id);
-      await deleteProduct(id);
+      await deleteProduct(id, token);
       setProducts(products.filter(p => p.id !== id));
     } catch (err) {
       alert(`Failed to delete: ${err.message}`);

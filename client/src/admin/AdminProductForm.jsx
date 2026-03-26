@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { createProduct, updateProduct } from '../services/productService';
+import { useAuth } from '../context/AuthContext';
 
 const CATEGORIES = ['General', 'Electronics', 'Clothing', 'Home & Kitchen', 'Sports', 'Books', 'Toys', 'Other'];
 
 function AdminProductForm({ product, onClose, onSuccess }) {
   const isEdit = !!product;
+  const { token } = useAuth();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -69,9 +71,9 @@ function AdminProductForm({ product, onClose, onSuccess }) {
       };
 
       if (isEdit) {
-        await updateProduct(product.id, payload);
+        await updateProduct(product.id, payload, token);
       } else {
-        await createProduct(payload);
+        await createProduct(payload, token);
       }
       onSuccess();
     } catch (err) {
