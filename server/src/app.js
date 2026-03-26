@@ -46,8 +46,10 @@ app.get('/', (req, res) => {
 // API Routes
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes   = require('./routes/orderRoutes');
+const authRoutes    = require('./routes/authRoutes');
 app.use('/api/products', productRoutes);
 app.use('/api/orders',   orderRoutes);
+app.use('/api/auth',     authRoutes);
 
 // 404 Handler - must be after all other routes
 app.use((req, res) => {

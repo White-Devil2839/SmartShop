@@ -1,14 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { createOrder, getAllOrders, getOrderById } = require('../controllers/orderController');
+const { authenticate, requireAdmin } = require('../middleware/authMiddleware');
 
-// POST /api/orders - Place a new order (checkout)
+// Public — customers can checkout and view their order confirmation
 router.post('/', createOrder);
-
-// GET /api/orders - List all orders (admin)
-router.get('/', getAllOrders);
-
-// GET /api/orders/:id - Get single order detail
 router.get('/:id', getOrderById);
+
+// Protected — admin only
+router.get('/', authenticate, requireAdmin, getAllOrders);
 
 module.exports = router;

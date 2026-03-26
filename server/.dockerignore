@@ -1,0 +1,16 @@
+.git
+.vscode
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.env
+.env.local
+.DS_Store
+coverage
+dev.db-journal
+dev.db-wal
+dev.db-shm
+
+# We DO NOT ignore dev.db itself here by default, because otherwise your Docker container will start with no database structure.
+# If you plan to run migrations INSIDE the container later, you can add dev.db to this list.

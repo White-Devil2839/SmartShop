@@ -7,20 +7,15 @@ const {
     updateProduct,
     deleteProduct
 } = require('../controllers/productController');
+const { authenticate, requireAdmin } = require('../middleware/authMiddleware');
 
-// POST /api/products - Create a new product
-router.post('/', createProduct);
-
-// GET /api/products - Get all products
+// Public — anyone can browse products
 router.get('/', getAllProducts);
-
-// GET /api/products/:id - Get a single product by ID
 router.get('/:id', getProductById);
 
-// PUT /api/products/:id - Update a product
-router.put('/:id', updateProduct);
-
-// DELETE /api/products/:id - Delete a product
-router.delete('/:id', deleteProduct);
+// Protected — admin only
+router.post('/',     authenticate, requireAdmin, createProduct);
+router.put('/:id',   authenticate, requireAdmin, updateProduct);
+router.delete('/:id',authenticate, requireAdmin, deleteProduct);
 
 module.exports = router;
