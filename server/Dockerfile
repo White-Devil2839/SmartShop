@@ -8,7 +8,6 @@ RUN npm install
 
 COPY . .
 
-# Generate Prisma client for Linux inside the container
 RUN npx prisma generate
 
 EXPOSE 5001
