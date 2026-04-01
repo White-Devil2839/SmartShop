@@ -29,17 +29,28 @@ function AdminProductList({ onEdit }) {
   }, []);
 
   const handleDelete = async (id, name) => {
-    if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete "${name}"?\n\nIf this product has order history, it will be hidden from the storefront instead of permanently deleted.`)) return;
     try {
       setDeletingId(id);
-      await deleteProduct(id, token);
-      setProducts(products.filter(p => p.id !== id));
+      const result = await deleteProduct(id, token);
+
+      if (result.softDeleted) {
+        // Product had order history — update it in-place as inactive
+        setProducts(prev => prev.map(p =>
+          p.id === id ? { ...p, isActive: false } : p
+        ));
+        alert(`"${name}" has been hidden from the storefront (soft deleted).\nIt cannot be permanently removed because it appears in order history.`);
+      } else {
+        // Permanently deleted — remove from list
+        setProducts(prev => prev.filter(p => p.id !== id));
+      }
     } catch (err) {
       alert(`Failed to delete: ${err.message}`);
     } finally {
       setDeletingId(null);
     }
   };
+
 
   if (loading) return <div className="admin-loading">Loading products...</div>;
   if (error) return (

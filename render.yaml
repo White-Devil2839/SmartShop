@@ -1,14 +1,27 @@
 services:
+  # ── Backend API ──────────────────────────────────────────────────────────────
   - type: web
     name: shopsmart-backend
     env: node
     plan: free
-    buildCommand: cd server && npm install
+    # H5: Run prisma generate + prisma migrate deploy on every deploy
+    buildCommand: cd server && npm install && npx prisma generate && npx prisma migrate deploy
     startCommand: cd server && npm start
     envVars:
       - key: PORT
         value: 10000
+      - key: NODE_ENV       # L2: Explicitly set production mode
+        value: production
+      # H4: The following secrets must be set manually in the Render dashboard
+      # (marked sync:false so they are never committed to source control)
+      - key: DATABASE_URL
+        sync: false         # e.g. file:./prisma/prod.db  OR a PostgreSQL URL
+      - key: JWT_SECRET
+        sync: false         # REQUIRED — server refuses to start without this
+      - key: FRONTEND_URL
+        sync: false         # e.g. https://your-app.onrender.com
 
+  # ── Frontend (static) ────────────────────────────────────────────────────────
   - type: static
     name: shopsmart-frontend
     env: static

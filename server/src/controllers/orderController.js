@@ -10,13 +10,23 @@ const createOrder = async (req, res) => {
             return res.status(400).json({ error: 'Order must contain at least one item' });
         }
 
+        const seenIds = new Set();
         for (const item of items) {
-            if (!item.productId || !item.quantity || item.quantity < 1) {
-                return res.status(400).json({
-                    error: 'Each item must have a valid productId and quantity >= 1'
-                });
+            if (!Number.isInteger(item.productId) || item.productId < 1) {
+                return res.status(400).json({ error: 'Each item must have a valid positive integer productId' });
             }
+            if (!Number.isInteger(item.quantity) || item.quantity < 1) {
+                return res.status(400).json({ error: 'Each item quantity must be a positive integer >= 1' });
+            }
+            if (item.quantity > 999) {
+                return res.status(400).json({ error: 'Quantity cannot exceed 999 per item' });
+            }
+            if (seenIds.has(item.productId)) {
+                return res.status(400).json({ error: `Duplicate productId ${item.productId} in order items. Combine quantities into a single entry.` });
+            }
+            seenIds.add(item.productId);
         }
+
 
         // --- Fetch all products in one query --------------------------
         const productIds = items.map(i => i.productId);

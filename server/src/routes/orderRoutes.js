@@ -1,13 +1,14 @@
-const express = require('express');
-const router = express.Router();
+const express  = require('express');
+const router   = express.Router();
 const { createOrder, getAllOrders, getOrderById } = require('../controllers/orderController');
 const { authenticate, requireAdmin } = require('../middleware/authMiddleware');
 
-// Public — customers can checkout and view their order confirmation
+// Public — customers place orders anonymously
 router.post('/', createOrder);
-router.get('/:id', getOrderById);
 
-// Protected — admin only
-router.get('/', authenticate, requireAdmin, getAllOrders);
+// Protected — authenticated users (admin) only (C4)
+router.get('/:id', authenticate, getOrderById);
+router.get('/',    authenticate, requireAdmin, getAllOrders);
 
 module.exports = router;
+

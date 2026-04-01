@@ -1,29 +1,51 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getOrderById } from '../services/orderService';
+import { useAuth } from '../context/AuthContext';
 import { StoreNav } from './StorefrontHome';
 import './storefront.css';
 import './cart.css';
 
 function OrderConfirmation() {
-  const { id } = useParams();
-  const [order, setOrder]   = useState(null);
+  const { id }       = useParams();
+  const navigate     = useNavigate();
+  const { token, loading: authLoading } = useAuth();
+
+  const [order,   setOrder]   = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState(null);
+  const [error,   setError]   = useState(null);
 
   useEffect(() => {
-    getOrderById(id)
+    // Wait until AuthContext has finished validating the stored token
+    if (authLoading) return;
+
+    if (!token) {
+      // Not authenticated — redirect to login, return here after
+      navigate('/login', { state: { from: `/order/${id}` }, replace: true });
+      return;
+    }
+
+    getOrderById(id, token)
       .then(setOrder)
-      .catch(() => setError('Could not load order details.'))
+      .catch((err) => {
+        if (err.status === 401) {
+          navigate('/login', { state: { from: `/order/${id}` }, replace: true });
+          return;
+        }
+        setError('Could not load order details. The order may not exist.');
+      })
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, token, authLoading, navigate]);
+
+  // Show nothing while auth is still loading (prevents flash redirect)
+  if (authLoading) return null;
 
   return (
     <div className="storefront-layout">
       <StoreNav />
 
       <main className="store-main detail-main">
-        {loading && <div className="store-loading"><div className="spinner" /><p>Loading order...</p></div>}
+        {loading && <div className="store-loading"><div className="spinner" /><p>Loading order…</p></div>}
 
         {error && (
           <div className="store-error">

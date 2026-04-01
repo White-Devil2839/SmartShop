@@ -1,36 +1,88 @@
 const prisma = require('../config/prisma');
 
-// Create a new product
+// ── Constants ────────────────────────────────────────────────────────────────
+const VALID_CATEGORIES = [
+    'General', 'Electronics', 'Clothing',
+    'Home & Kitchen', 'Sports', 'Books', 'Toys', 'Other',
+];
+const MAX_NAME_LEN = 200;
+const MAX_DESC_LEN = 2000;
+const MAX_URL_LEN  = 500;
+
+// Validate imageUrl: must be http/https or null/empty
+const isValidImageUrl = (url) => {
+    if (!url) return true;
+    try {
+        const u = new URL(url);
+        return u.protocol === 'http:' || u.protocol === 'https:';
+    } catch {
+        return false;
+    }
+};
+
+// ── Create a new product ─────────────────────────────────────────────────────
 const createProduct = async (req, res) => {
     try {
         const { name, description, price, stock, imageUrl, category, isActive } = req.body;
 
-        // Validate required fields
+        // Required fields
         if (!name || !description || price === undefined || stock === undefined) {
             return res.status(400).json({
                 error: 'Missing required fields',
-                required: ['name', 'description', 'price', 'stock']
+                required: ['name', 'description', 'price', 'stock'],
             });
         }
 
-        // Validate data types
+        // Type validation
         if (typeof price !== 'number' || typeof stock !== 'number') {
             return res.status(400).json({
-                error: 'Invalid data types',
-                message: 'price and stock must be numbers'
+                error: 'Invalid data types: price and stock must be numbers',
             });
+        }
+
+        if (price <= 0) {
+            return res.status(400).json({ error: 'Price must be greater than 0' });
+        }
+
+        if (!Number.isInteger(stock) || stock < 0) {
+            return res.status(400).json({ error: 'Stock must be a non-negative integer' });
+        }
+
+        // String length limits (H2)
+        if (name.trim().length > MAX_NAME_LEN) {
+            return res.status(400).json({ error: `Product name must be ${MAX_NAME_LEN} characters or fewer` });
+        }
+        if (description.trim().length > MAX_DESC_LEN) {
+            return res.status(400).json({ error: `Description must be ${MAX_DESC_LEN} characters or fewer` });
+        }
+
+        // Category enum validation (H2)
+        const resolvedCategory = category || 'General';
+        if (!VALID_CATEGORIES.includes(resolvedCategory)) {
+            return res.status(400).json({
+                error: `Invalid category. Allowed: ${VALID_CATEGORIES.join(', ')}`,
+            });
+        }
+
+        // imageUrl must be http/https (H2)
+        if (imageUrl && !isValidImageUrl(imageUrl)) {
+            return res.status(400).json({ error: 'imageUrl must be a valid http or https URL' });
+        }
+
+        if (imageUrl && imageUrl.length > MAX_URL_LEN) {
+            return res.status(400).json({ error: `imageUrl must be ${MAX_URL_LEN} characters or fewer` });
         }
 
         const product = await prisma.product.create({
             data: {
-                name,
-                description,
+                name: name.trim(),
+                description: description.trim(),
                 price,
                 stock,
-                imageUrl: imageUrl || null,
-                category: category || 'General',
-                isActive: isActive !== undefined ? Boolean(isActive) : true
-            }
+                imageUrl: imageUrl?.trim() || null,
+                category: resolvedCategory,
+                isActive: isActive !== undefined ? Boolean(isActive) : true,
+            },
         });
 
         res.status(201).json(product);
@@ -40,8 +92,8 @@ const createProduct = async (req, res) => {
     }
 };
 
-// Get all products
-// Supports query params: ?category=Electronics&isActive=true
+// ── Get all products ─────────────────────────────────────────────────────────
+// Supports ?category=Electronics&isActive=true
 const getAllProducts = async (req, res) => {
     try {
         const { category, isActive } = req.query;
@@ -52,7 +104,7 @@ const getAllProducts = async (req, res) => {
 
         const products = await prisma.product.findMany({
             where,
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
         });
 
         res.status(200).json(products);
@@ -62,19 +114,16 @@ const getAllProducts = async (req, res) => {
     }
 };
 
-// Get a single product by ID
+// ── Get a single product by ID ───────────────────────────────────────────────
 const getProductById = async (req, res) => {
     try {
-        const { id } = req.params;
-        const productId = parseInt(id);
+        const productId = parseInt(req.params.id);
 
-        if (isNaN(productId)) {
+        if (isNaN(productId) || productId < 1) {
             return res.status(400).json({ error: 'Invalid product ID' });
         }
 
-        const product = await prisma.product.findUnique({
-            where: { id: productId }
-        });
+        const product = await prisma.product.findUnique({ where: { id: productId } });
 
         if (!product) {
             return res.status(404).json({ error: 'Product not found' });
@@ -87,50 +136,56 @@ const getProductById = async (req, res) => {
     }
 };
 
-// Update a product
+// ── Update a product ─────────────────────────────────────────────────────────
 const updateProduct = async (req, res) => {
     try {
-        const { id } = req.params;
-        const productId = parseInt(id);
+        const productId = parseInt(req.params.id);
 
-        if (isNaN(productId)) {
+        if (isNaN(productId) || productId < 1) {
             return res.status(400).json({ error: 'Invalid product ID' });
         }
 
         const { name, description, price, stock, imageUrl, category, isActive } = req.body;
 
-        // Check if product exists
-        const existingProduct = await prisma.product.findUnique({
-            where: { id: productId }
-        });
-
-        if (!existingProduct) {
+        const existing = await prisma.product.findUnique({ where: { id: productId } });
+        if (!existing) {
             return res.status(404).json({ error: 'Product not found' });
         }
 
-        // Prepare update data (only include fields that are provided)
         const updateData = {};
-        if (name !== undefined) updateData.name = name;
-        if (description !== undefined) updateData.description = description;
+
+        if (name !== undefined) {
+            if (name.trim().length === 0) return res.status(400).json({ error: 'Name cannot be empty' });
+            if (name.trim().length > MAX_NAME_LEN) return res.status(400).json({ error: `Name must be ${MAX_NAME_LEN} characters or fewer` });
+            updateData.name = name.trim();
+        }
+        if (description !== undefined) {
+            if (description.trim().length === 0) return res.status(400).json({ error: 'Description cannot be empty' });
+            if (description.trim().length > MAX_DESC_LEN) return res.status(400).json({ error: `Description must be ${MAX_DESC_LEN} characters or fewer` });
+            updateData.description = description.trim();
+        }
         if (price !== undefined) {
-            if (typeof price !== 'number') {
-                return res.status(400).json({ error: 'Price must be a number' });
-            }
+            if (typeof price !== 'number' || price <= 0) return res.status(400).json({ error: 'Price must be a positive number' });
             updateData.price = price;
         }
         if (stock !== undefined) {
-            if (typeof stock !== 'number') {
-                return res.status(400).json({ error: 'Stock must be a number' });
-            }
+            if (typeof stock !== 'number' || !Number.isInteger(stock) || stock < 0) return res.status(400).json({ error: 'Stock must be a non-negative integer' });
             updateData.stock = stock;
         }
-        if (imageUrl !== undefined) updateData.imageUrl = imageUrl || null;
-        if (category !== undefined) updateData.category = category;
+        if (imageUrl !== undefined) {
+            if (imageUrl && !isValidImageUrl(imageUrl)) return res.status(400).json({ error: 'imageUrl must be a valid http or https URL' });
+            if (imageUrl && imageUrl.length > MAX_URL_LEN) return res.status(400).json({ error: `imageUrl must be ${MAX_URL_LEN} characters or fewer` });
+            updateData.imageUrl = imageUrl?.trim() || null;
+        }
+        if (category !== undefined) {
+            if (!VALID_CATEGORIES.includes(category)) return res.status(400).json({ error: `Invalid category. Allowed: ${VALID_CATEGORIES.join(', ')}` });
+            updateData.category = category;
+        }
         if (isActive !== undefined) updateData.isActive = Boolean(isActive);
 
         const product = await prisma.product.update({
             where: { id: productId },
-            data: updateData
+            data: updateData,
         });
 
         res.status(200).json(product);
@@ -140,32 +195,44 @@ const updateProduct = async (req, res) => {
     }
 };
 
-// Delete a product
+// ── Delete a product (with soft-delete protection) (C1) ──────────────────────
 const deleteProduct = async (req, res) => {
     try {
-        const { id } = req.params;
-        const productId = parseInt(id);
+        const productId = parseInt(req.params.id);
 
-        if (isNaN(productId)) {
+        if (isNaN(productId) || productId < 1) {
             return res.status(400).json({ error: 'Invalid product ID' });
         }
 
-        // Check if product exists
-        const existingProduct = await prisma.product.findUnique({
-            where: { id: productId }
+        const existing = await prisma.product.findUnique({
+            where: { id: productId },
+            include: { _count: { select: { orderItems: true } } },
         });
 
-        if (!existingProduct) {
+        if (!existing) {
             return res.status(404).json({ error: 'Product not found' });
         }
 
-        await prisma.product.delete({
-            where: { id: productId }
-        });
+        // If the product is referenced in any order, soft delete to preserve history (C1)
+        if (existing._count.orderItems > 0) {
+            const product = await prisma.product.update({
+                where: { id: productId },
+                data: { isActive: false },
+            });
+            return res.status(200).json({
+                message: 'Product has order history and cannot be permanently deleted. It has been hidden from the storefront.',
+                softDeleted: true,
+                product,
+            });
+        }
+
+        // No order references — safe to hard delete
+        await prisma.product.delete({ where: { id: productId } });
 
         res.status(200).json({
-            message: 'Product deleted successfully',
-            id: productId
+            message: 'Product permanently deleted.',
+            softDeleted: false,
+            id: productId,
         });
     } catch (error) {
         console.error('Error deleting product:', error);
@@ -178,5 +245,5 @@ module.exports = {
     getAllProducts,
     getProductById,
     updateProduct,
-    deleteProduct
+    deleteProduct,
 };

@@ -7,7 +7,13 @@ function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from || '/admin';
+
+  // H6: Only trust the from path if it is a relative internal path
+  const rawFrom = location.state?.from;
+  const from = (typeof rawFrom === 'string' && rawFrom.startsWith('/'))
+    ? rawFrom
+    : '/admin';
+
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');

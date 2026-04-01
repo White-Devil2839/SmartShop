@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'smartshop-dev-secret-change-in-production';
+// JWT_SECRET is validated at startup in index.js — no fallback here
+const JWT_SECRET = process.env.JWT_SECRET;
+
 
 // Verify Bearer token and attach req.user
 const authenticate = (req, res, next) => {
