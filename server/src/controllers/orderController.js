@@ -104,20 +104,42 @@ const createOrder = async (req, res) => {
     }
 };
 
-// GET /api/orders - List all orders (admin use)
+// GET /api/orders — List all orders (admin), supports ?page=1&limit=10
 const getAllOrders = async (req, res) => {
     try {
-        const orders = await prisma.order.findMany({
-            orderBy: { createdAt: 'desc' },
-            include: {
-                items: {
-                    include: {
-                        product: { select: { id: true, name: true, imageUrl: true } }
-                    }
-                }
-            }
-        });
-        res.status(200).json(orders);
+        const { page, limit } = req.query;
+
+        const include = {
+            items: {
+                include: { product: { select: { id: true, name: true, imageUrl: true } } },
+            },
+        };
+
+        // Paginated (opt-in via ?page)
+        if (page !== undefined) {
+            const pageNum  = Math.max(1, parseInt(page)  || 1);
+            const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 10));
+            const skip     = (pageNum - 1) * limitNum;
+
+            const [orders, total] = await prisma.$transaction([
+                prisma.order.findMany({ orderBy: { createdAt: 'desc' }, skip, take: limitNum, include }),
+                prisma.order.count(),
+            ]);
+
+            return res.status(200).json({
+                data: orders,
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total,
+                    totalPages: Math.ceil(total / limitNum),
+                },
+            });
+        }
+
+        // Un-paginated — still return the same envelope shape for consistency
+        const orders = await prisma.order.findMany({ orderBy: { createdAt: 'desc' }, include });
+        res.status(200).json({ data: orders, pagination: null });
     } catch (error) {
         console.error('Error fetching orders:', error);
         res.status(500).json({ error: 'Failed to fetch orders' });
@@ -154,4 +176,56 @@ const getOrderById = async (req, res) => {
     }
 };
 
-module.exports = { createOrder, getAllOrders, getOrderById };
+// PATCH /api/orders/:id/status — Update order status (admin)
+const VALID_STATUSES = ['pending', 'confirmed', 'cancelled'];
+const VALID_TRANSITIONS = {
+    pending:   ['confirmed', 'cancelled'],
+    confirmed: ['cancelled'],
+    cancelled: [],                        // terminal state
+};
+
+const updateOrderStatus = async (req, res) => {
+    try {
+        const orderId = parseInt(req.params.id);
+        if (isNaN(orderId) || orderId < 1) {
+            return res.status(400).json({ error: 'Invalid order ID' });
+        }
+
+        const { status } = req.body;
+        if (!status || !VALID_STATUSES.includes(status)) {
+            return res.status(400).json({
+                error: `Status must be one of: ${VALID_STATUSES.join(', ')}`,
+            });
+        }
+
+        const order = await prisma.order.findUnique({ where: { id: orderId } });
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        const allowed = VALID_TRANSITIONS[order.status] ?? [];
+        if (!allowed.includes(status)) {
+            return res.status(409).json({
+                error: `Cannot transition from "${order.status}" → "${status}"`,
+                allowedTransitions: allowed,
+            });
+        }
+
+        const updated = await prisma.order.update({
+            where: { id: orderId },
+            data:  { status },
+            include: {
+                items: {
+                    include: { product: { select: { id: true, name: true, imageUrl: true } } },
+                },
+            },
+        });
+
+        res.status(200).json(updated);
+    } catch (error) {
+        console.error('Error updating order status:', error);
+        res.status(500).json({ error: 'Failed to update order status' });
+    }
+};
+
+module.exports = { createOrder, getAllOrders, getOrderById, updateOrderStatus };

@@ -100,6 +100,8 @@ ProductCard.propTypes = {
 };
 
 // ── Main Storefront Home ────────────────────────────────────────────────────
+const PAGE_SIZE = 12;
+
 function StorefrontHome() {
   const [products, setProducts]     = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -107,6 +109,7 @@ function StorefrontHome() {
   const [search, setSearch]         = useState('');
   const [category, setCategory]     = useState('All');
   const [sort, setSort]             = useState('newest');
+  const [page, setPage]             = useState(1);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -146,8 +149,12 @@ function StorefrontHome() {
     return result;
   }, [products, search, category, sort]);
 
-  const handleReset = () => { setSearch(''); setCategory('All'); setSort('newest'); };
+  const handleReset = () => { setSearch(''); setCategory('All'); setSort('newest'); setPage(1); };
   const isFiltered = search || category !== 'All' || sort !== 'newest';
+
+  // Reset to page 1 whenever filters change
+  const totalPages = Math.ceil(displayed.length / PAGE_SIZE);
+  const paginated  = displayed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="storefront-layout">
@@ -168,16 +175,16 @@ function StorefrontHome() {
               className="store-search"
               placeholder="Search products..."
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
             {search && (
               <button className="search-clear" onClick={() => setSearch('')} aria-label="Clear search">×</button>
             )}
           </div>
-          <select className="store-filter" value={category} onChange={e => setCategory(e.target.value)}>
+          <select className="store-filter" value={category} onChange={e => { setCategory(e.target.value); setPage(1); }}>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
-          <select className="store-filter" value={sort} onChange={e => setSort(e.target.value)}>
+          <select className="store-filter" value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
             <option value="newest">Newest first</option>
             <option value="price-asc">Price: Low → High</option>
             <option value="price-desc">Price: High → Low</option>
@@ -190,16 +197,38 @@ function StorefrontHome() {
           <p className="result-count">
             {displayed.length === 0
               ? 'No products match your filters'
-              : `Showing ${displayed.length} product${displayed.length !== 1 ? 's' : ''}${isFiltered ? ' (filtered)' : ''}`}
+              : `Showing ${paginated.length} of ${displayed.length} product${displayed.length !== 1 ? 's' : ''}${isFiltered ? ' (filtered)' : ''}`}
           </p>
         )}
 
         {loading && <div className="store-loading"><div className="spinner" /><p>Loading products...</p></div>}
         {error && <div className="store-error"><p>⚠️ Could not load products. Please try again later.</p></div>}
 
-        {!loading && !error && displayed.length > 0 && (
+        {!loading && !error && paginated.length > 0 && (
           <div className="store-grid">
-            {displayed.map(product => <ProductCard key={product.id} product={product} />)}
+            {paginated.map(product => <ProductCard key={product.id} product={product} />)}
+          </div>
+        )}
+
+        {/* Pagination controls */}
+        {!loading && !error && totalPages > 1 && (
+          <div className="store-pagination">
+            <button className="store-page-btn" onClick={() => setPage(1)}       disabled={page === 1}>«</button>
+            <button className="store-page-btn" onClick={() => setPage(p => p - 1)} disabled={page === 1}>‹</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+              .reduce((acc, p, idx, arr) => {
+                if (idx > 0 && p - arr[idx - 1] > 1) acc.push('…');
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, i) =>
+                p === '…'
+                  ? <span key={`ellipsis-${i}`} className="pagination-info">…</span>
+                  : <button key={p} className={`store-page-btn ${p === page ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>
+              )}
+            <button className="store-page-btn" onClick={() => setPage(p => p + 1)} disabled={page === totalPages}>›</button>
+            <button className="store-page-btn" onClick={() => setPage(totalPages)} disabled={page === totalPages}>»</button>
           </div>
         )}
 

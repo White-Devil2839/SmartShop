@@ -93,21 +93,44 @@ const createProduct = async (req, res) => {
 };
 
 // ── Get all products ─────────────────────────────────────────────────────────
-// Supports ?category=Electronics&isActive=true
+// Supports ?category=Electronics&isActive=true&page=1&limit=20
+// Backward-compat: without ?page returns plain array; with ?page returns { data, pagination }
 const getAllProducts = async (req, res) => {
     try {
-        const { category, isActive } = req.query;
+        const { category, isActive, page, limit } = req.query;
 
         const where = {};
         if (category) where.category = category;
         if (isActive !== undefined) where.isActive = isActive === 'true';
 
+        // Paginated response (opt-in via ?page)
+        if (page !== undefined) {
+            const pageNum  = Math.max(1, parseInt(page)  || 1);
+            const limitNum = Math.min(100, Math.max(1, parseInt(limit) || 20));
+            const skip     = (pageNum - 1) * limitNum;
+
+            const [products, total] = await prisma.$transaction([
+                prisma.product.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limitNum }),
+                prisma.product.count({ where }),
+            ]);
+
+            return res.status(200).json({
+                data: products,
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total,
+                    totalPages: Math.ceil(total / limitNum),
+                },
+            });
+        }
+
+        // Un-paginated — return consistent envelope { data, pagination: null }
         const products = await prisma.product.findMany({
             where,
             orderBy: { createdAt: 'desc' },
         });
-
-        res.status(200).json(products);
+        res.status(200).json({ data: products, pagination: null });
     } catch (error) {
         console.error('Error fetching products:', error);
         res.status(500).json({ error: 'Failed to fetch products' });
