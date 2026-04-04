@@ -2,54 +2,75 @@ name: SmartShop CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
-  ci:
+  # ── Backend ─────────────────────────────────────────────────────────────────
+  backend:
+    name: Backend — test & lint
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+          cache-dependency-path: server/package-lock.json
 
-    # ── Backend ──────────────────────────────────────────────────────────────
-    - name: Install backend dependencies
-      run: npm ci
-      working-directory: ./server
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: ./server
 
-    - name: Generate Prisma client
-      run: npx prisma generate
-      working-directory: ./server
+      - name: Generate Prisma client
+        run: npx prisma generate
+        working-directory: ./server
 
-    - name: Push database schema for tests (M4)
-      run: npx prisma db push --accept-data-loss
-      working-directory: ./server
-      env:
-        DATABASE_URL: file:./prisma/test.db
+      - name: Push database schema (SQLite test DB)
+        run: npx prisma db push --accept-data-loss
+        working-directory: ./server
+        env:
+          DATABASE_URL: file:./prisma/test.db
 
-    - name: Run backend tests
-      run: npm test
-      working-directory: ./server
-      env:
-        DATABASE_URL: file:./prisma/test.db
-        JWT_SECRET: ci-test-secret-not-used-in-production
-        NODE_ENV: test
+      - name: Run backend tests
+        run: npm test
+        working-directory: ./server
+        env:
+          DATABASE_URL: file:./prisma/test.db
+          JWT_SECRET: ci-test-secret-not-used-in-production
+          NODE_ENV: test
 
-    # ── Frontend ─────────────────────────────────────────────────────────────
-    - name: Install frontend dependencies
-      run: npm ci
-      working-directory: ./client
+      - name: Lint backend
+        run: npm run lint
+        working-directory: ./server
 
-    - name: Lint frontend
-      run: npm run lint
-      working-directory: ./client
+  # ── Frontend ─────────────────────────────────────────────────────────────────
+  frontend:
+    name: Frontend — lint & build
+    runs-on: ubuntu-latest
 
-    - name: Build frontend
-      run: npm run build
-      working-directory: ./client
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: ./client
+
+      - name: Lint frontend
+        run: npm run lint
+        working-directory: ./client
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: ./client

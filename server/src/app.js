@@ -56,7 +56,7 @@ app.use((req, res) => {
 
 // ── Global Error Handler (M1) ─────────────────────────────────────────────────
 // In production, never leak internal error details to the client
-app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+app.use((err, req, res, next) => {
     console.error('[Global Error]', err);
 
     const statusCode = err.status || 500;
