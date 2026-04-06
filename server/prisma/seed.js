@@ -5,10 +5,10 @@ const prisma = new PrismaClient();
 const products = [
   // Electronics
   {
-    name: 'Gaming Laptop Pro',
-    description: 'High-performance 15.6" gaming laptop with RTX 4070, 16GB RAM, 512GB SSD. Perfect for gaming and heavy workloads.',
-    price: 1299.99,
-    stock: 8,
+    name: 'Gaming Laptop Pro X',
+    description: 'High-performance 15.6" gaming laptop with RTX 4080, 32GB RAM, 1TB NVMe SSD. Peak performance for 4K gaming.',
+    price: 1899.99,
+    stock: 5,
     category: 'Electronics',
     imageUrl: 'https://images.unsplash.com/photo-1603302576837-37561b2e2302?w=600&q=80',
     isActive: true,
@@ -132,6 +132,34 @@ const products = [
     stock: 3,
     category: 'Clothing',
     imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&q=80',
+    isActive: true,
+  },
+  // Furniture
+  {
+    name: 'Ergonomic Office Chair',
+    description: 'High-back mesh ergonomic chair with adjustable lumbar support, 4D armrests, and dynamic tilt. Perfect for working from home.',
+    price: 249.99,
+    stock: 18,
+    category: 'Other',
+    imageUrl: 'https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=600&q=80',
+    isActive: true,
+  },
+  {
+    name: 'Ultra-Wide Curved Monitor',
+    description: '34-inch WQHD curved gaming monitor with 144Hz refresh rate, 1ms response time, and AMD FreeSync Premium.',
+    price: 499.00,
+    stock: 7,
+    category: 'Electronics',
+    imageUrl: 'https://images.unsplash.com/photo-1527443154391-507e9dc6c5cc?w=600&q=80',
+    isActive: true,
+  },
+  {
+    name: 'Smart Home Hub',
+    description: 'Voice-controlled smart hub with universal compatibility. Control your lights, locks, and thermostats from one sleek device.',
+    price: 129.99,
+    stock: 10,
+    category: 'Electronics',
+    imageUrl: 'https://images.unsplash.com/photo-1558089687-f282ffcbc126?w=600&q=80',
     isActive: true,
   },
   // Hidden (admin only)
