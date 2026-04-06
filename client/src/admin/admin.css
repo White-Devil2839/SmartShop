@@ -596,4 +596,197 @@
   flex-shrink: 0;
 }
 
+/* ============================
+   ORDER STATUS BADGES — extended
+   ============================ */
+.order-status-shipped   { background: #ede9fe; color: #5b21b6; }
+.order-status-delivered { background: #dcfce7; color: #15803d; }
 
+/* Transition buttons — shipped & delivered */
+.order-transition-shipped   { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+.order-transition-shipped:hover:not(:disabled)   { background: #ddd6fe; }
+.order-transition-delivered { background: #dcfce7; color: #15803d; border-color: #86efac; }
+.order-transition-delivered:hover:not(:disabled) { background: #bbf7d0; }
+
+/* ============================
+   ADMIN STATS / ANALYTICS PANEL
+   ============================ */
+.stats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Loading & error states */
+.stats-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem 2rem;
+  color: #64748b;
+}
+.stats-error {
+  background: #fff5f5;
+  border: 1px solid #fca5a5;
+  border-radius: 10px;
+  padding: 1.25rem;
+  color: #dc2626;
+  font-size: 0.9rem;
+}
+
+/* KPI grid */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.kpi-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+
+.kpi-icon { font-size: 2rem; flex-shrink: 0; line-height: 1; }
+
+.kpi-body { display: flex; flex-direction: column; gap: 0.15rem; }
+
+.kpi-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1;
+}
+
+.kpi-label {
+  font-size: 0.78rem;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Lower two-column row */
+.stats-lower {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.stats-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  padding: 1.25rem 1.5rem;
+}
+
+.stats-card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.stats-empty {
+  color: #94a3b8;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+/* Status bar chart */
+.status-bars { display: flex; flex-direction: column; gap: 0.75rem; }
+
+.status-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.status-bar-label {
+  width: 90px;
+  font-size: 0.8rem;
+  color: #475569;
+  font-weight: 500;
+  flex-shrink: 0;
+  text-transform: capitalize;
+}
+
+.status-bar-track {
+  flex: 1;
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.status-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 4px;
+}
+
+.status-chip {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+/* Recent orders list */
+.recent-list { display: flex; flex-direction: column; gap: 0; }
+
+.recent-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.85rem;
+}
+.recent-row:last-child { border-bottom: none; }
+
+.recent-id {
+  font-weight: 700;
+  color: #334155;
+  width: 52px;
+  flex-shrink: 0;
+  font-size: 0.8rem;
+}
+
+.recent-items {
+  flex: 1;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.recent-total {
+  font-weight: 700;
+  color: #1e293b;
+  flex-shrink: 0;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .kpi-grid   { grid-template-columns: 1fr; }
+  .stats-lower { grid-template-columns: 1fr; }
+}

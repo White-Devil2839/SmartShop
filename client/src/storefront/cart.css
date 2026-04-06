@@ -271,6 +271,19 @@
   line-height: 1.5;
 }
 
+.shipping-note {
+  font-size: 0.78rem;
+  color: #c45500;
+  background: #fff8f0;
+  border: 1px solid #fddcab;
+  border-radius: 6px;
+  padding: 0.4rem 0.65rem;
+  margin: -0.25rem 0;
+  line-height: 1.5;
+}
+
+.shipping-free { color: #16a34a; font-weight: 700; }
+
 .btn-checkout {
   width: 100%;
   background: #3b82f6;

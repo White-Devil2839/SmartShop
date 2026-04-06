@@ -177,11 +177,13 @@ const getOrderById = async (req, res) => {
 };
 
 // PATCH /api/orders/:id/status — Update order status (admin)
-const VALID_STATUSES = ['pending', 'confirmed', 'cancelled'];
+const VALID_STATUSES = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 const VALID_TRANSITIONS = {
     pending:   ['confirmed', 'cancelled'],
-    confirmed: ['cancelled'],
-    cancelled: [],                        // terminal state
+    confirmed: ['shipped',   'cancelled'],
+    shipped:   ['delivered'],
+    delivered: [],   // terminal
+    cancelled: [],   // terminal
 };
 
 const updateOrderStatus = async (req, res) => {

@@ -8,12 +8,16 @@ const LIMIT = 10;
 const STATUS_META = {
   pending:   { label: 'Pending',   cls: 'order-status-pending'   },
   confirmed: { label: 'Confirmed', cls: 'order-status-confirmed' },
+  shipped:   { label: 'Shipped',   cls: 'order-status-shipped'   },
+  delivered: { label: 'Delivered', cls: 'order-status-delivered' },
   cancelled: { label: 'Cancelled', cls: 'order-status-cancelled' },
 };
 
 const VALID_TRANSITIONS = {
   pending:   ['confirmed', 'cancelled'],
-  confirmed: ['cancelled'],
+  confirmed: ['shipped',   'cancelled'],
+  shipped:   ['delivered'],
+  delivered: [],
   cancelled: [],
 };
 

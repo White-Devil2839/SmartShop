@@ -45,9 +45,11 @@ app.get('/', (req, res) => {
 const productRoutes = require('./routes/productRoutes');
 const orderRoutes   = require('./routes/orderRoutes');
 const authRoutes    = require('./routes/authRoutes');
+const adminRoutes   = require('./routes/adminRoutes');
 app.use('/api/products', productRoutes);
 app.use('/api/orders',   orderRoutes);
 app.use('/api/auth',     authRoutes);
+app.use('/api/admin',    adminRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────────────────────
 app.use((req, res) => {
