@@ -8,6 +8,7 @@ yarn-error.log
 .env.local
 .DS_Store
 coverage
+logs
 dev.db-journal
 dev.db-wal
 dev.db-shm
