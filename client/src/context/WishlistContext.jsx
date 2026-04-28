@@ -14,11 +14,6 @@ export function WishlistProvider({ children }) {
         }
     });
 
-    const persist = (next) => {
-        setItems(next);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    };
-
     const toggle = useCallback((product) => {
         setItems(prev => {
             const exists = prev.some(p => p.id === product.id);
